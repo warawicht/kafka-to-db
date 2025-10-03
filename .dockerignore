@@ -1,0 +1,8 @@
+.git
+bin
+README*
+AGENTS.md
+Makefile
+*.md
+*.log
+.env*

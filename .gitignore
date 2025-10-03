@@ -1,0 +1,19 @@
+# Build outputs
+bin/
+
+# Local tooling caches
+.gocache/
+.gomodcache/
+
+# Environment files
+.env
+.env.local
+
+# Editor directories
+.vscode/
+.idea/
+
+# Miscellaneous
+*.log
+.DS_Store
+coverage.out

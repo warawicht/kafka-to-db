@@ -1,0 +1,96 @@
+services:
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: kafka-to-db-zookeeper
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: bitnami/kafka:3.6
+    container_name: kafka-to-db-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:29092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  topic-init:
+    image: bitnami/kafka:3.6
+    container_name: kafka-to-db-topic-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command: >-
+      until /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do
+        echo 'waiting for kafka broker...';
+        sleep 3;
+      done;
+      /opt/bitnami/kafka/bin/kafka-topics.sh --create --if-not-exists --topic staging.events --partitions 4 --replication-factor 1 --bootstrap-server kafka:9092;
+      echo 'topic staging.events ready.'
+    restart: "no"
+
+  postgres:
+    image: postgres:15
+    container_name: kafka-to-db-postgres
+    environment:
+      - POSTGRES_USER=kafka
+      - POSTGRES_PASSWORD=kafka
+      - POSTGRES_DB=kafka
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kafka -d kafka"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  worker:
+    build: .
+    container_name: kafka-to-db-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      topic-init:
+        condition: service_completed_successfully
+    environment:
+      - DATABASE_URL=postgres://kafka:kafka@postgres:5432/kafka?sslmode=disable
+      - DB_TABLE=kafka_events
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_TOPIC=staging.events
+      - KAFKA_GROUP=event-writer
+      - KAFKA_VERSION=3.6.0
+      - WORKER_COUNT=32
+      - JOB_BUFFER=4096
+      - BATCH_SIZE=256
+      - BATCH_FLUSH_INTERVAL=40ms
+      - MAX_RETRIES=5
+      - METRICS_ADDR=:2112
+    ports:
+      - "2112:2112"
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
