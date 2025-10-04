@@ -25,3 +25,24 @@ docker compose down
 Add `-v` to `docker compose down -v` when you also want to drop the persisted Postgres volume.
 
 > Note: Bitnami removed their Kafka/Zookeeper images from Docker Hub, so the stack now uses Confluent Platform containers (`confluentinc/cp-kafka` and `confluentinc/cp-zookeeper`).
+
+## Load generator (optional)
+
+To exercise the pipeline with synthetic traffic, start the load generator service:
+
+```bash
+docker compose --profile loadtest up loadgen
+```
+
+Defaults:
+- 1,000 messages/second
+- 512-byte JSON payloads
+- Infinite run (`GEN_TOTAL_MESSAGES=0`)
+
+Tune behaviour via environment variables such as `GEN_MESSAGE_RATE`, `GEN_MESSAGE_SIZE`, `GEN_TOTAL_MESSAGES`, and `GEN_COMPRESSION` (see `internal/generator/config.go`).
+
+You can also run the binary locally without Docker:
+
+```bash
+go run ./cmd/generator
+```

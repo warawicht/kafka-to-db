@@ -31,6 +31,12 @@ go mod tidy
 ```
 *(Required once to download `sarama`, `pgx`, and `backoff` packages.)*
 
+### Optional: generate load
+```bash
+go run ./cmd/generator
+```
+Override defaults via `GEN_MESSAGE_RATE`, `GEN_MESSAGE_SIZE`, and friends as described in `internal/generator/config.go`.
+
 ## 4. Build and run the worker
 ```bash
 make build

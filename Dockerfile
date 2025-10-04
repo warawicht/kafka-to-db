@@ -8,11 +8,13 @@ COPY cmd ./cmd
 COPY internal ./internal
 RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o /worker ./cmd/worker
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o /generator ./cmd/generator
 
 FROM alpine:3.19
 RUN addgroup -S worker && adduser -S worker -G worker
 WORKDIR /app
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /worker /usr/local/bin/worker
+COPY --from=builder /generator /usr/local/bin/generator
 USER worker
 ENTRYPOINT ["/usr/local/bin/worker"]

@@ -94,5 +94,26 @@ services:
       - "2112:2112"
     restart: unless-stopped
 
+  loadgen:
+    build: .
+    container_name: kafka-to-db-loadgen
+    profiles: ["loadtest"]
+    depends_on:
+      kafka:
+        condition: service_healthy
+      topic-init:
+        condition: service_completed_successfully
+    entrypoint: ["/usr/local/bin/generator"]
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_TOPIC=staging.events
+      - KAFKA_VERSION=3.6.1
+      - GEN_MESSAGE_RATE=1000
+      - GEN_MESSAGE_SIZE=512
+      - GEN_TOTAL_MESSAGES=0
+      - GEN_KEY_PREFIX=loadgen
+      - GEN_LOG_INTERVAL=5s
+    restart: "no"
+
 volumes:
   postgres-data:
