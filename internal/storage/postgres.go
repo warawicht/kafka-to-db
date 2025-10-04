@@ -54,9 +54,9 @@ func (w *PostgresWriter) ProcessBatch(ctx context.Context, records []worker.Reco
 	}
 	batch := &pgx.Batch{}
 	quoted := quoteIdentifier(w.tableName)
-	query := fmt.Sprintf(`INSERT INTO %s (topic, partition, offset, key, value, headers, event_time)
+	query := fmt.Sprintf(`INSERT INTO %s (topic, partition, message_offset, key, value, headers, event_time)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (topic, partition, offset) DO NOTHING`, quoted)
+		ON CONFLICT (topic, partition, message_offset) DO NOTHING`, quoted)
 
 	for _, rec := range records {
 		headersJSON, err := json.Marshal(rec.Headers)
