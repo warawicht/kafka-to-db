@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 
 	"demo/internal/config"
 	"demo/internal/worker"
