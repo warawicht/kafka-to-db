@@ -13,6 +13,7 @@ docker compose up --build
 
 This brings up:
 - `zookeeper` and `kafka` brokers (Confluent Platform `7.6.0`, port `29092` exposed for local producers)
+- `topic-init` helper that waits for Kafka and seeds the `staging.events` topic (4 partitions)
 - `postgres` initialised with the `kafka_events` table
 - `worker` container publishing metrics at <http://localhost:2112/metrics>
 
