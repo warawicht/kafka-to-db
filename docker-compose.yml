@@ -1,14 +1,16 @@
 services:
   zookeeper:
-    image: bitnami/zookeeper:3.9
+    image: confluentinc/cp-zookeeper:7.6.0
     container_name: kafka-to-db-zookeeper
     environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+      - ZOOKEEPER_SYNC_LIMIT=2
     ports:
       - "2181:2181"
 
   kafka:
-    image: bitnami/kafka:3.6
+    image: confluentinc/cp-kafka:7.6.0
     container_name: kafka-to-db-kafka
     depends_on:
       - zookeeper
@@ -16,33 +18,38 @@ services:
       - "29092:29092"
     environment:
       - KAFKA_BROKER_ID=1
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:29092
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
-      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+      - CONFLUENT_METRICS_ENABLE=false
+      - CONFLUENT_SUPPORT_METRICS_ENABLE=false
     healthcheck:
-      test: ["CMD-SHELL", "/opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
       interval: 15s
       timeout: 10s
       retries: 10
       start_period: 20s
 
   topic-init:
-    image: bitnami/kafka:3.6
+    image: confluentinc/cp-kafka:7.6.0
     container_name: kafka-to-db-topic-init
     depends_on:
       kafka:
         condition: service_healthy
     entrypoint: ["/bin/bash", "-c"]
     command: >-
-      until /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do
+      until kafka-topics --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do
         echo 'waiting for kafka broker...';
         sleep 3;
       done;
-      /opt/bitnami/kafka/bin/kafka-topics.sh --create --if-not-exists --topic staging.events --partitions 4 --replication-factor 1 --bootstrap-server kafka:9092;
+      kafka-topics --create --if-not-exists --topic staging.events --partitions 4 --replication-factor 1 --bootstrap-server kafka:9092;
       echo 'topic staging.events ready.'
     restart: "no"
 
@@ -81,7 +88,7 @@ services:
       - KAFKA_BROKERS=kafka:9092
       - KAFKA_TOPIC=staging.events
       - KAFKA_GROUP=event-writer
-      - KAFKA_VERSION=3.6.0
+      - KAFKA_VERSION=3.6.1
       - WORKER_COUNT=32
       - JOB_BUFFER=4096
       - BATCH_SIZE=256

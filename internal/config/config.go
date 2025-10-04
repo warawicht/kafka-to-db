@@ -36,7 +36,7 @@ type Config struct {
 // FromEnv constructs Config using environment variables with sensible defaults.
 func FromEnv() (Config, error) {
 	cfg := Config{
-		KafkaVersion:        getenv("KAFKA_VERSION", "3.6.0"),
+		KafkaVersion:        getenv("KAFKA_VERSION", "3.6.1"),
 		KafkaSessionTimeout: mustParseDuration(getenv("KAFKA_SESSION_TIMEOUT", "30s")),
 		KafkaHeartbeat:      mustParseDuration(getenv("KAFKA_HEARTBEAT", "3s")),
 		KafkaMaxPollRecords: mustParseInt(getenv("KAFKA_MAX_POLL", "500")),

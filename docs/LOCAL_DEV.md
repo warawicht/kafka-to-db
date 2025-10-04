@@ -12,7 +12,7 @@ docker compose up --build
 ```
 
 This brings up:
-- `zookeeper` and `kafka` brokers (port `29092` exposed for local producers)
+- `zookeeper` and `kafka` brokers (Confluent Platform `7.6.0`, port `29092` exposed for local producers)
 - `postgres` initialised with the `kafka_events` table
 - `worker` container publishing metrics at <http://localhost:2112/metrics>
 
@@ -22,3 +22,5 @@ docker compose down
 ```
 
 Add `-v` to `docker compose down -v` when you also want to drop the persisted Postgres volume.
+
+> Note: Bitnami removed their Kafka/Zookeeper images from Docker Hub, so the stack now uses Confluent Platform containers (`confluentinc/cp-kafka` and `confluentinc/cp-zookeeper`).
