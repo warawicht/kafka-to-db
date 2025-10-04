@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/IBM/sarama v1.41.0
 	github.com/jackc/pgx/v5 v5.5.3
-	golang.org/x/time v0.13.0
+	golang.org/x/time v0.5.0
 )
 
 require (
